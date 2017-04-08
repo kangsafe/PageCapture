@@ -61,4 +61,62 @@ public class AttachDao {
         }
     }
 
+    public void setUrl(String note_ls_id, String note_id, String content) {
+        String sql = "update tb_note_info set url_flag='Y',note_content=? where note_id=?";
+        String sql2 = "UPDATE  tb_note_info_ls set url_flag='Y',note_content=? where note_ls_id=?";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        int rs = 0;
+        try {
+            conn = BaseDaoJdbc.getConn();
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, content);
+            ps.setString(2, note_id);
+            rs = ps.executeUpdate();
+            ps.close();
+            ps = conn.prepareStatement(sql2);
+            ps.setString(1, content);
+            ps.setString(2, note_ls_id);
+            rs=ps.executeUpdate();
+            ps.close();
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            BaseDaoJdbc.closeConn(conn, ps);
+        }
+    }
+
+    public List<NoteModel> getNoteList(int num) {
+        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and url_flag='N' and rownum<? order by note_ctime desc";
+        List<NoteModel> attachments = new ArrayList<NoteModel>();
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = BaseDaoJdbc.getConn();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, num);
+            rs = ps.executeQuery();
+            if (rs != null) {
+                while (rs.next()) {
+                    NoteModel m = new NoteModel();
+                    m.setNote_ls_id(rs.getString("note_ls_id"));
+                    m.setNote_id(rs.getString("note_id"));
+                    m.setUser_id(rs.getString("user_id"));
+                    m.setGroup_id(rs.getString("group_id"));
+                    m.setUrl(rs.getString("url"));
+                    attachments.add(m);
+                }
+                rs.close();
+            }
+            ps.close();
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            BaseDaoJdbc.closeConn(conn, ps, rs);
+        }
+        return attachments;
+    }
 }

@@ -9,6 +9,7 @@ import java.rmi.server.ExportException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +30,11 @@ public class Utils {
      * @param savePath
      * @throws IOException
      */
-    public static String downLoadFromUrl(String urlStr, String savePath, String reg) throws IOException {
+    public static String downLoadFromUrl(String urlStr, String savePath, String reg) {
         String pageUrl = urlStr;
         String fileName = "";
+        InputStream inputStream = null;
+        FileOutputStream fos = null;
         try {
             URL url = new URL(pageUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -50,29 +53,40 @@ public class Utils {
             }
 
             //得到输入流
-            InputStream inputStream = conn.getInputStream();
+            inputStream = conn.getInputStream();
             //获取自己数组
             byte[] getData = readInputStream(inputStream);
 
             //文件保存位置
             File saveDir = new File(savePath);
             if (!saveDir.exists()) {
-                saveDir.mkdir();
+                saveDir.mkdirs();
             }
             fileName = getRealDiskFileNameByUrl(pageUrl, savePath, reg);
-            File file = new File(saveDir + File.separator + fileName);
-            FileOutputStream fos = new FileOutputStream(file);
+            File file = new File(saveDir + File.separator + fileName.replace("?", ""));
+            fos = new FileOutputStream(file);
             fos.write(getData);
+            System.out.println("info:" + pageUrl + " download success");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("info:" + pageUrl + " download ERROR");
+            fileName = "";
+        } finally {
             if (fos != null) {
-                fos.close();
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             if (inputStream != null) {
-                inputStream.close();
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (ExportException e) {
-            e.printStackTrace();
         }
-        System.out.println("info:" + pageUrl + " download success");
         return fileName;
     }
 
@@ -161,15 +175,8 @@ public class Utils {
     public static String getFileNameByUrl(String url, String reg) {
         String filename = "";
         try {
-            Pattern pattern = null;
-            if (reg == null || reg.length() == 0) {
-                pattern = Pattern.compile("\\w*\\.(css|png|jpg|gif)+");
-            } else {
-                pattern = Pattern.compile(reg);
-            }
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()) {
-                filename = matcher.group();
+            if (url.lastIndexOf("/") > 0) {
+                filename = url.substring(url.lastIndexOf("/") + 1);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -197,16 +204,11 @@ public class Utils {
         String filename = "";
         try {
             filename = getFileNameByUrl(url, reg);
-            int i = 1;
-            while (new File(path, filename).exists()) {
-                filename = getNameByFilename(filename) + i + "." + getExtByFilename(filename);
-                i++;
+            if (new File(path, filename).exists()) {
+                filename = UUID.randomUUID().toString() + "." + getExtByFilename(filename);
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        if (filename.length() == 0) {
-            filename = System.currentTimeMillis() + "";
         }
         return filename;
     }
@@ -225,6 +227,10 @@ public class Utils {
             e.printStackTrace();
         }
         return host;
+    }
+
+    public static String getPre(String url, String css) {
+        return getFileNameByUrl(url, css);
     }
 
     public static void initConfig(String filename) {
@@ -260,6 +266,12 @@ public class Utils {
             }
             if (p.containsKey("webdriver_path")) {
                 Config.webdriver_path = p.getProperty("webdriver_path");
+            }
+            if (p.containsKey("root_page_path")) {
+                Config.root_page_path = p.getProperty("root_page_path");
+            }
+            if (p.containsKey("root_page_path_other")) {
+                Config.root_page_path_other = p.getProperty("root_page_path_other");
             }
         } catch (Exception e) {
             e.printStackTrace();
