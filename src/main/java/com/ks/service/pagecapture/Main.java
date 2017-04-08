@@ -6,12 +6,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.*;
-import java.nio.file.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Administrator on 2017/3/30.
@@ -69,6 +66,17 @@ public class Main {
                         System.out.println("网页标题:" + driver.getTitle() + " 地址:" + driver.getCurrentUrl());
                         String str = driver.getPageSource();
                         content = str.replaceAll(Utils.regEx_html, "");
+                        List<WebElement> meta = driver.findElements(By.tagName("meta"));
+                        if (meta != null && meta.size() > 0) {
+                            for (WebElement e : meta
+                                    ) {
+                                String meta_http_equiv = e.getAttribute("http-equiv");
+                                String meta_content = e.getAttribute("content");
+                                if (meta_http_equiv != null && meta_content != null && meta_http_equiv.equals("Content-Type") && meta_content.contains("text/html;")) {
+                                    str = str.replace(meta_content, "text/html; charset=utf-8");
+                                }
+                            }
+                        }
                         List<WebElement> cssList = driver.findElements(By.tagName("link"));
                         List<WebElement> imageList = driver.findElements(By.tagName("img"));
                         getResource(str, path, imageList, cssList);
@@ -101,10 +109,11 @@ public class Main {
             //获取css资源
             for (WebElement css : cssList
                     ) {
-                String href = css.getAttribute("href");
-                String filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "css");
-                if (filename != null && filename.length() > 0) {
-                    str = str.replace(href, "index_files/" + filename);
+                String rel = css.getAttribute("rel");
+                if (rel != null && rel.toLowerCase().equals("stylesheet")) {
+                    String href = css.getAttribute("href");
+                    String filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "css");
+                    str = replaceByLocal(str, filename, href);
                 }
             }
             //获取图片资源
@@ -112,16 +121,14 @@ public class Main {
                     ) {
                 String href = img.getAttribute("src");
                 String filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "png|jpg|gif");
-                if (filename != null && filename.length() > 0) {
-                    str = str.replace(href, "index_files/" + filename);
-                }
+                str = replaceByLocal(str, filename, href);
             }
 
             File htmlFile = new File(path, "index.html");
             if (!htmlFile.exists()) {
                 htmlFile.getParentFile().mkdirs();
             }
-            writer = new FileWriter(htmlFile);
+            writer = new FileWriter(htmlFile, false);
             writer.write(str);
             writer.close();
         } catch (IOException e) {
@@ -137,4 +144,16 @@ public class Main {
         }
     }
 
+    private static String replaceByLocal(String str, String filename, String href) {
+        if (filename != null && filename.length() > 0) {
+            if (str.contains(href)) {
+                str = str.replace(href, "index_files/" + filename);
+            } else {
+                if (str.contains(href.replace("https:", "").replace("http:", ""))) {
+                    str = str.replace(href.replace("https:", "").replace("http:", ""), "index_files/" + filename);
+                }
+            }
+        }
+        return str;
+    }
 }
