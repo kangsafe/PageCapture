@@ -28,6 +28,12 @@ public class Utils {
 
     public static String regEx_img_src = " src=[\\'\\\"]?([^\\'\\\"]*)[\\'\\\"]? ";
 
+    public static String regEx_head_base = "<base\\b[^>]*>";
+
+    public static String regEx_uc_web_iframe = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
+
+    public static String regEx_uc_web_banner = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
+
     /**
      * 获取地址部分
      *
@@ -378,7 +384,10 @@ public class Utils {
                 temp = temp.replace(t, newt);
             }
         }
-        temp = temp.replaceAll("\\n\\n+", "");
+        //去除空行
+        temp = temp.replaceAll("\\b*\\n+", "");
+        //去除base信息
+        temp = temp.replaceAll(regEx_head_base, "");
         return temp;
     }
 

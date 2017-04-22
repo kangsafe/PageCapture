@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ks.service.pagecapture.Config.driver;
+import static com.ks.service.pagecapture.Utils.regEx_uc_web_banner;
+import static com.ks.service.pagecapture.Utils.regEx_uc_web_iframe;
 
 /**
  * Created by Administrator on 2017/3/30.
@@ -56,12 +58,20 @@ public class Main {
             } else {
                 for (NoteModel m : attachments
                         ) {
-                    String pageUrl = m.getUrl();
+//                    String pageUrl = m.getUrl();
 //                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
 //                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
+                    String pageUrl = "http://s4.uczzd.cn/webapp/webview/article/news.html?app=uc-iflow&aid=12946022970462462619&cid=100&zzd_from=uc-iflow&uc_param_str=dndseiwifrvesvntgipf&rd_type=share&pagetype=share&btifl=100&sdkdeep=3&sdksid=d7a5e485-ca79-54dc-d63c-8d209eb07673&sdkoriginal=d7a5e485-ca79-54dc-d63c-8d209eb07673&from=singlemessage&isappinstalled=1";
+
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlFromStr(pageUrl);
                         dao.setUrl(m.getNote_ls_id(), m.getNote_id());
+                    }
+                    if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+                        pageUrl += "&sinvoke=1";
+                        driver.manage().window().maximize();
+                    } else {
+                        driver.manage().window().setSize(new Dimension(414, 736));
                     }
                     String path = Config.root_page_path;
                     String path2 = Config.root_page_path_other;
@@ -81,7 +91,7 @@ public class Main {
                     System.out.println("笔记id:" + m.getNote_id());
                     try {
                         driver.get(pageUrl);
-                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
+//                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
                         title = driver.getTitle();
                         System.out.println("网页标题:" + title);
                         System.out.println("地址:" + driver.getCurrentUrl());
@@ -100,7 +110,7 @@ public class Main {
                         }
                         List<WebElement> cssList = driver.findElements(By.tagName("link"));
                         List<WebElement> imageList = driver.findElements(By.tagName("img"));
-                        getResource(str, path, imageList, cssList);
+                        getResource(pageUrl, path, imageList, cssList);
                         String zipFileName = m.getNote_ls_id();
                         // 压缩文件
 //                        ZipUtils.createZip(path, path + ".zip", "");
@@ -118,40 +128,27 @@ public class Main {
                             driver = new InternetExplorerDriver();
                         }
                     } finally {
-                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
+//                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
-//                    break;
+                    break;
                 }
                 attachments.clear();
             }
-//            break;
+            break;
         }
     }
 
-    public static void getResource(String html, String path, List<WebElement> imageList, List<WebElement> cssList) {
+    public static void getResource(String pageUrl, String path, List<WebElement> imageList, List<WebElement> cssList) {
         FileWriter writer = null;
         FileOutputStream fout = null;
         OutputStreamWriter osw = null;
         BufferedWriter out = null;
         try {
-//            String str = html.replaceAll(Utils.regEx_script, "");
-//            js.executeScript("var script=document.getElementsByTagName('script');\n" +
-//                    "    for(i=0;i<script.length;i++){\n" +
-//                    "        script[i].parentNode.removeChild(script[i]);\n" +
-//                    "    }");
+            if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+                js.executeScript("$(\".show-more-detail\").click();");
+            }
             int i = 0;
-//            List<WebElement> scripts=driver.findElements(By.tagName("script"));
-//            for (WebElement elemet:scripts
-//                 ) {
-//                try {
-//                    js.executeScript("document.getElementsByTagName(\"script\")[" + i + "].remove()';");
-//                }catch (Exception e){
-//                    e.printStackTrace();
-//                }
-//                i++;
-//            }
-            i = 0;
             //获取css资源
             for (WebElement css : cssList
                     ) {
@@ -216,6 +213,19 @@ public class Main {
             out = new BufferedWriter(osw);
 
             String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
+            if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+                //去除ucweb中的iframe
+                str = str.replaceAll(regEx_uc_web_iframe, "");
+                //去除banner
+                WebElement ele = driver.findElement(By.cssSelector("div.top-banner-wrap"));
+//                String banner = (String) js.executeScript("return arguments[0].innerHTML;", ele);
+//                System.out.println(banner);
+//                System.out.println(ele.getAttribute("innerHTML"));
+//                System.out.println(ele.getAttribute("outerHTML"));
+//                str = str.replaceAll(regEx_uc_web_banner, "");
+                str = str.replace(ele.getAttribute("outerHTML"), "");
+                //去除
+            }
             str = Utils.replaceImageByLocal(images, str);
             out.write(str);
             out.flush();
