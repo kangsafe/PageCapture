@@ -8,6 +8,7 @@ import org.openqa.selenium.ie.InternetExplorerDriver;
 
 import java.io.*;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,8 +56,9 @@ public class Main {
             } else {
                 for (NoteModel m : attachments
                         ) {
-                    String pageUrl = m.getUrl();
+//                    String pageUrl = m.getUrl();
 //                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
+                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlFromStr(pageUrl);
                         dao.setUrl(m.getNote_ls_id(), m.getNote_id());
@@ -79,7 +81,7 @@ public class Main {
                     System.out.println("笔记id:" + m.getNote_id());
                     try {
                         driver.get(pageUrl);
-//                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
+                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
                         title = driver.getTitle();
                         System.out.println("网页标题:" + title);
                         System.out.println("地址:" + driver.getCurrentUrl());
@@ -116,14 +118,14 @@ public class Main {
                             driver = new InternetExplorerDriver();
                         }
                     } finally {
-                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
+//                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
-//                    break;
+                    break;
                 }
                 attachments.clear();
             }
-//            break;
+            break;
         }
     }
 
@@ -134,7 +136,22 @@ public class Main {
         BufferedWriter out = null;
         try {
 //            String str = html.replaceAll(Utils.regEx_script, "");
+//            js.executeScript("var script=document.getElementsByTagName('script');\n" +
+//                    "    for(i=0;i<script.length;i++){\n" +
+//                    "        script[i].parentNode.removeChild(script[i]);\n" +
+//                    "    }");
             int i = 0;
+//            List<WebElement> scripts=driver.findElements(By.tagName("script"));
+//            for (WebElement elemet:scripts
+//                 ) {
+//                try {
+//                    js.executeScript("document.getElementsByTagName(\"script\")[" + i + "].remove()';");
+//                }catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//                i++;
+//            }
+            i = 0;
             //获取css资源
             for (WebElement css : cssList
                     ) {
@@ -149,18 +166,24 @@ public class Main {
                 i++;
             }
             i = 0;
+            List<ImageModel> images = new ArrayList<>();
             //获取图片资源
             for (WebElement img : imageList
                     ) {
                 try {
+                    ImageModel model = new ImageModel();
+                    model.setImgid(UUID.randomUUID().toString().replace("-", ""));
                     String filename = "";
                     String href = img.getAttribute("src");
                     //解决微信
                     String datasrc = img.getAttribute("data-src");
                     if (datasrc != null && datasrc.length() > 0) {
                         System.out.println(datasrc);
-                        filename = Utils.downLoadFromUrl(datasrc, path + "\\index_files\\", "png|jpg|gif");
-                        js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
+                        filename = Utils.downLoadFromUrl(datasrc, path + "\\index_files\\", "jpg");
+                        model.setSrc("index_files/" + filename);
+                        images.add(model);
+                        js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].setAttribute('data-imgid','" + model.getImgid() + "');");
+//                        js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
                     } else {
                         if (href != null && href.length() > 0) {
                             System.out.println(href);
@@ -169,10 +192,13 @@ public class Main {
                                 filename = UUID.randomUUID().toString().replace("-", "") + ".png";
                                 Utils.base64ToImage(href.replace("data:image/png;base64,", "").trim(), path + "\\index_files\\" + filename);
                             } else {
-                                filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "png|jpg|gif");
+                                filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "jpg");
                             }
 //                str = replaceByLocal(str, filename, href);
-                            js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
+                            model.setSrc("index_files/" + filename);
+                            images.add(model);
+                            js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].setAttribute('data-imgid','" + model.getImgid() + "');");
+//                            js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
                         }
                     }
                 } catch (Exception e) {
@@ -188,7 +214,9 @@ public class Main {
             fout = new FileOutputStream(htmlFile);
             osw = new OutputStreamWriter(fout, "utf-8");
             out = new BufferedWriter(osw);
+
             String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
+            str = Utils.replaceImageByLocal(images, str);
             out.write(str);
             out.flush();
             out.close();

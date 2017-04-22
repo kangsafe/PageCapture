@@ -22,6 +22,12 @@ public class Utils {
 
     public static String regEx_url = "[a-zA-z]+://[^\\s]*";
 
+    public static String regEx_img = "<img\\b[^>]*>";
+
+    public static String regEx_img_id = " data-imgid=[\\'\\\"]?([^\\'\\\"]*)[\\'\\\"]? ";
+
+    public static String regEx_img_src = " src=[\\'\\\"]?([^\\'\\\"]*)[\\'\\\"]? ";
+
     /**
      * 获取地址部分
      *
@@ -84,7 +90,8 @@ public class Utils {
             if (!saveDir.exists()) {
                 saveDir.mkdirs();
             }
-            fileName = getRealDiskFileNameByUrl(pageUrl, savePath, reg);
+            String ext = getExtByContentType(conn.getContentType().toLowerCase(), reg);
+            fileName = getRealDiskFileNameByUrl(pageUrl, savePath, ext);
             File file = new File(saveDir + File.separator + fileName);
             fos = new FileOutputStream(file);
             fos.write(getData);
@@ -112,6 +119,27 @@ public class Utils {
         return fileName;
     }
 
+    private static String getExtByContentType(String contentType, String defaultExt) {
+        String ext;
+        if (contentType.equals("text/css")) {
+            ext = "css";
+        } else if (contentType.equals("image/jpeg")) {
+            ext = "jpg";
+        } else if (contentType.equals("image/jpg")) {
+            ext = "jpg";
+        } else if (contentType.equals("image/png")) {
+            ext = "png";
+        } else if (contentType.equals("image/bmp")) {
+            ext = "bmp";
+        } else if (contentType.equals("image/gif")) {
+            ext = "gif";
+        } else if (contentType.equals("image/webp")) {
+            ext = "webp";
+        } else {
+            ext = defaultExt;
+        }
+        return ext;
+    }
 
     /**
      * 从输入流中获取字节数组
@@ -194,13 +222,16 @@ public class Utils {
         return document.toString();
     }
 
-    public static String getFileNameByUrl(String url, String reg) {
+    public static String getFileNameByUrl(String url) {
         String filename = "";
         try {
             int start = url.lastIndexOf("/");
             int end = url.lastIndexOf("?");
             if (start > 0 && end > 0 && end > start) {
                 filename = url.substring(start + 1, end);
+                if (filename.indexOf(".") > 0) {
+                    return filename.substring(0, filename.indexOf("."));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -224,24 +255,13 @@ public class Utils {
         }
     }
 
-    public static String getRealDiskFileNameByUrl(String url, String path, String reg) {
+    public static String getRealDiskFileNameByUrl(String url, String path, String ext) {
         String filename = "";
         try {
-            filename = getFileNameByUrl(url, reg);
-            if (filename.length() > 0 && filename.indexOf(".") > 0) {
-                String ext = getExtByFilename(filename);
-                if (ext.equals("") || ext.length() > 3) {
-                    ext = reg.equals("css") ? "css" : "jpg";
-                }
-                if (new File(path, filename).exists()) {
-                    filename = UUID.randomUUID().toString().replace("-", "") + "." + ext;
-                } else {
-                    filename = UUID.randomUUID().toString().replace("-", "") + "." + ext;
-                }
-            } else {
-                filename = UUID.randomUUID().toString().replace("-", "") + (reg.equals("css") ? ".css" : ".jpg");
+            filename = getFileNameByUrl(url) + "." + ext;
+            if (filename.equals("." + ext) || new File(path, filename).exists()) {
+                filename = UUID.randomUUID().toString().replace("-", "") + "." + ext;
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -265,7 +285,7 @@ public class Utils {
     }
 
     public static String getPre(String url, String css) {
-        return getFileNameByUrl(url, css);
+        return getFileNameByUrl(url);
     }
 
     public static void initConfig(String filename) {
@@ -340,4 +360,35 @@ public class Utils {
         }
     }
 
+    public static String replaceImageByLocal(List<ImageModel> images, String str) {
+        String temp = str;
+        Pattern pattern = Pattern.compile(regEx_img);
+        Matcher matcher = pattern.matcher(str);
+        List<String> imgs = new ArrayList<>();
+        while (matcher.find()) {
+            System.out.println(matcher.group());
+            imgs.add(matcher.group());
+        }
+        for (int i = 0; i < images.size(); i++) {
+            int index = findImgId(images.get(i).getImgid(), imgs);
+            if (index > -1) {
+                String t = imgs.get(index);
+                String newt = t.replace("data-imgid=\"" + images.get(i).getImgid() + "\" ", "").replaceAll(regEx_img_src, " src=\"" + images.get(i).getSrc() + "\" ");
+                System.out.println(newt);
+                temp = temp.replace(t, newt);
+            }
+        }
+        return temp;
+    }
+
+    private static int findImgId(String imgid, List<String> imgs) {
+        int index = -1;
+        for (int i = 0; i < imgs.size(); i++) {
+            if (imgs.get(i).contains("data-imgid=\"" + imgid + "\"")) {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
 }
