@@ -1,20 +1,25 @@
 package com.ks.service.pagecapture;
 
+import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.List;
+import java.util.UUID;
+
+import static com.ks.service.pagecapture.Config.driver;
 
 /**
  * Created by Administrator on 2017/3/30.
  */
 public class Main {
     private static AttachDao dao = new AttachDao();
+    private static WebDriver driver = null;
+    private static JavascriptExecutor js = null;
 
     public static void main(String[] args) {
         //配置文件
@@ -25,12 +30,14 @@ public class Main {
         //初始化webdriver配置
         System.getProperties().setProperty(Config.webdriver, Config.webdriver_path);
         System.out.println("网页剪藏程序开始运行...");
-        WebDriver driver = null;
+
         if (Config.webdriver.indexOf("chrome") > 0) {
             driver = new ChromeDriver();//new FirefoxDriver();
         } else if (Config.webdriver.indexOf("ie") > 0) {
             driver = new InternetExplorerDriver();
         }
+        js = (JavascriptExecutor) driver;
+        driver.manage().window().setSize(new Dimension(414, 736));
 //        WebDriverWait wait = new WebDriverWait(driver, 10);
 //        wait.withTimeout(10, TimeUnit.SECONDS);
         //设置10秒
@@ -49,21 +56,33 @@ public class Main {
                 for (NoteModel m : attachments
                         ) {
                     String pageUrl = m.getUrl();
+//                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
+                    if (!Utils.isUrl(pageUrl)) {
+                        pageUrl = Utils.getUrlFromStr(pageUrl);
+                        dao.setUrl(m.getNote_ls_id(), m.getNote_id());
+                    }
                     String path = Config.root_page_path;
                     String path2 = Config.root_page_path_other;
+                    String zipPath = "esoupload/notefiles/";
                     if (m.getGroup_id() == null || m.getGroup_id().length() == 0) {
                         path += File.separator + m.getUser_id() + File.separator + m.getNote_id() + File.separator + m.getNote_ls_id();
                         path2 += File.separator + m.getUser_id() + File.separator + m.getNote_id() + File.separator + m.getNote_ls_id();
+                        zipPath += m.getUser_id() + "/" + m.getNote_id() + "/" + m.getNote_ls_id() + ".zip";
                     } else {
                         path += File.separator + m.getGroup_id() + File.separator + m.getNote_id() + File.separator + m.getNote_ls_id();
                         path2 += File.separator + m.getGroup_id() + File.separator + m.getNote_id() + File.separator + m.getNote_ls_id();
+                        zipPath += m.getGroup_id() + "/" + m.getNote_id() + "/" + m.getNote_ls_id() + ".zip";
                     }
                     String content = "";
+                    String title = "";
                     System.out.println("网页剪藏开始");
                     System.out.println("笔记id:" + m.getNote_id());
                     try {
                         driver.get(pageUrl);
-                        System.out.println("网页标题:" + driver.getTitle() + " 地址:" + driver.getCurrentUrl());
+//                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
+                        title = driver.getTitle();
+                        System.out.println("网页标题:" + title);
+                        System.out.println("地址:" + driver.getCurrentUrl());
                         String str = driver.getPageSource();
                         content = str.replaceAll(Utils.regEx_html, "");
                         List<WebElement> meta = driver.findElements(By.tagName("meta"));
@@ -91,21 +110,31 @@ public class Main {
                         e.printStackTrace();
                         //Close the browser
                         driver.quit();
-                        driver = new ChromeDriver();
+                        if (Config.webdriver.indexOf("chrome") > 0) {
+                            driver = new ChromeDriver();//new FirefoxDriver();
+                        } else if (Config.webdriver.indexOf("ie") > 0) {
+                            driver = new InternetExplorerDriver();
+                        }
                     } finally {
-                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content);
+                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
+//                    break;
                 }
                 attachments.clear();
             }
+//            break;
         }
     }
 
     public static void getResource(String html, String path, List<WebElement> imageList, List<WebElement> cssList) {
         FileWriter writer = null;
+        FileOutputStream fout = null;
+        OutputStreamWriter osw = null;
+        BufferedWriter out = null;
         try {
-            String str = html.replaceAll(Utils.regEx_script, "");
+//            String str = html.replaceAll(Utils.regEx_script, "");
+            int i = 0;
             //获取css资源
             for (WebElement css : cssList
                     ) {
@@ -113,24 +142,61 @@ public class Main {
                 if (rel != null && rel.toLowerCase().equals("stylesheet")) {
                     String href = css.getAttribute("href");
                     String filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "css");
-                    str = replaceByLocal(str, filename, href);
+//                    str = replaceByLocal(str, filename, href);
+                    //run JS to modify hidden element
+                    js.executeScript("document.getElementsByTagName(\"link\")[" + i + "].href ='index_files/" + filename + "';");
                 }
+                i++;
             }
+            i = 0;
             //获取图片资源
             for (WebElement img : imageList
                     ) {
-                String href = img.getAttribute("src");
-                String filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "png|jpg|gif");
-                str = replaceByLocal(str, filename, href);
+                try {
+                    String filename = "";
+                    String href = img.getAttribute("src");
+                    //解决微信
+                    String datasrc = img.getAttribute("data-src");
+                    if (datasrc != null && datasrc.length() > 0) {
+                        System.out.println(datasrc);
+                        filename = Utils.downLoadFromUrl(datasrc, path + "\\index_files\\", "png|jpg|gif");
+                        js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
+                    } else {
+                        if (href != null && href.length() > 0) {
+                            System.out.println(href);
+                            //解决base64编码图片
+                            if (href.startsWith("data:image/png;base64,")) {
+                                filename = UUID.randomUUID().toString().replace("-", "") + ".png";
+                                Utils.base64ToImage(href.replace("data:image/png;base64,", "").trim(), path + "\\index_files\\" + filename);
+                            } else {
+                                filename = Utils.downLoadFromUrl(href, path + "\\index_files\\", "png|jpg|gif");
+                            }
+//                str = replaceByLocal(str, filename, href);
+                            js.executeScript("document.getElementsByTagName(\"img\")[" + i + "].src ='index_files/" + filename + "';");
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                i++;
             }
 
             File htmlFile = new File(path, "index.html");
             if (!htmlFile.exists()) {
                 htmlFile.getParentFile().mkdirs();
             }
-            writer = new FileWriter(htmlFile, false);
-            writer.write(str);
-            writer.close();
+            fout = new FileOutputStream(htmlFile);
+            osw = new OutputStreamWriter(fout, "utf-8");
+            out = new BufferedWriter(osw);
+            String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
+            out.write(str);
+            out.flush();
+            out.close();
+            osw.close();
+            fout.close();
+//            writer = new FileWriter(htmlFile, false);
+//            writer.write(str);
+//            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -140,6 +206,30 @@ public class Main {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                out = null;
+            }
+            if (osw != null) {
+                try {
+                    osw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                osw = null;
+            }
+            if (fout != null) {
+                try {
+                    fout.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                fout = null;
             }
         }
     }
@@ -151,6 +241,15 @@ public class Main {
             } else {
                 if (str.contains(href.replace("https:", "").replace("http:", ""))) {
                     str = str.replace(href.replace("https:", "").replace("http:", ""), "index_files/" + filename);
+                } else {
+                    try {
+                        String temp = URLEncoder.encode(href, "utf-8");
+                        if (str.contains(temp)) {
+                            str = str.replace(temp, "index_files/" + filename);
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

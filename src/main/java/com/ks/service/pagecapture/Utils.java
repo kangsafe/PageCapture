@@ -6,10 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.rmi.server.ExportException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +19,30 @@ public class Utils {
     public static String regEx_style = "<[\\s]*?style[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?style[\\s]*?>";
     //定义style的正则表达式{或<style[^>]*?>[\\s\\S]*?<\\/style> }
     public static String regEx_html = "<[^>]+>"; //定义HTML标签的正则表达式
+
+    public static String regEx_url = "[a-zA-z]+://[^\\s]*";
+
+    /**
+     * 获取地址部分
+     *
+     * @param str
+     * @return
+     */
+    public static String getUrlFromStr(String str) {
+        return str.replaceAll(regEx_url, "").trim();
+    }
+
+    /**
+     * 验证是否为地址
+     *
+     * @param str
+     * @return
+     */
+    public static boolean isUrl(String str) {
+        Pattern pattern = Pattern.compile(regEx_url);
+        Matcher matcher = pattern.matcher(str);
+        return matcher.matches();
+    }
 
     /**
      * 从网络Url中下载文件
@@ -36,6 +57,7 @@ public class Utils {
         InputStream inputStream = null;
         FileOutputStream fos = null;
         try {
+            System.out.println("StartImag:" + pageUrl);
             URL url = new URL(pageUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             //设置超时间为3秒
@@ -63,7 +85,7 @@ public class Utils {
                 saveDir.mkdirs();
             }
             fileName = getRealDiskFileNameByUrl(pageUrl, savePath, reg);
-            File file = new File(saveDir + File.separator + fileName.replace("?", ""));
+            File file = new File(saveDir + File.separator + fileName);
             fos = new FileOutputStream(file);
             fos.write(getData);
             System.out.println("info:" + pageUrl + " download success");
@@ -175,8 +197,10 @@ public class Utils {
     public static String getFileNameByUrl(String url, String reg) {
         String filename = "";
         try {
-            if (url.lastIndexOf("/") > 0) {
-                filename = url.substring(url.lastIndexOf("/") + 1);
+            int start = url.lastIndexOf("/");
+            int end = url.lastIndexOf("?");
+            if (start > 0 && end > 0 && end > start) {
+                filename = url.substring(start + 1, end);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -204,9 +228,20 @@ public class Utils {
         String filename = "";
         try {
             filename = getFileNameByUrl(url, reg);
-            if (new File(path, filename).exists()) {
-                filename = UUID.randomUUID().toString() + "." + getExtByFilename(filename);
+            if (filename.length() > 0 && filename.indexOf(".") > 0) {
+                String ext = getExtByFilename(filename);
+                if (ext.equals("") || ext.length() > 3) {
+                    ext = reg.equals("css") ? "css" : "jpg";
+                }
+                if (new File(path, filename).exists()) {
+                    filename = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+                } else {
+                    filename = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+                }
+            } else {
+                filename = UUID.randomUUID().toString().replace("-", "") + (reg.equals("css") ? ".css" : ".jpg");
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -285,4 +320,24 @@ public class Utils {
             }
         }
     }
+
+    public static void base64ToImage(String base64Str, String fileName) {
+        // Base64解码
+        byte[] bytes2 = Base64.getDecoder().decode(base64Str);//
+        try {
+            File file = new File(fileName);
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            // 生成zip压缩包
+            OutputStream out2 = new FileOutputStream(fileName);
+            out2.write(bytes2);
+            out2.flush();
+            out2.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
