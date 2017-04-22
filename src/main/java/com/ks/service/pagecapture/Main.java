@@ -56,9 +56,9 @@ public class Main {
             } else {
                 for (NoteModel m : attachments
                         ) {
-//                    String pageUrl = m.getUrl();
+                    String pageUrl = m.getUrl();
 //                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
-                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
+//                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlFromStr(pageUrl);
                         dao.setUrl(m.getNote_ls_id(), m.getNote_id());
@@ -118,14 +118,14 @@ public class Main {
                             driver = new InternetExplorerDriver();
                         }
                     } finally {
-//                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
+                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
-                    break;
+//                    break;
                 }
                 attachments.clear();
             }
-            break;
+//            break;
         }
     }
 
