@@ -12,10 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ks.service.pagecapture.Config.driver;
-import static com.ks.service.pagecapture.Utils.regEx_uc_web_banner;
-import static com.ks.service.pagecapture.Utils.regEx_uc_web_iframe;
-
 /**
  * Created by Administrator on 2017/3/30.
  */
@@ -140,7 +136,7 @@ public class Main {
     }
 
     public static void getResource(String pageUrl, String path, List<WebElement> imageList, List<WebElement> cssList) {
-        FileWriter writer = null;
+//        FileWriter writer = null;
         FileOutputStream fout = null;
         OutputStreamWriter osw = null;
         BufferedWriter out = null;
@@ -215,7 +211,7 @@ public class Main {
             String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
             if (pageUrl.startsWith("http://s4.uczzd.cn")) {
                 //去除ucweb中的iframe
-                str = str.replaceAll(regEx_uc_web_iframe, "");
+                str = str.replaceAll(Utils.regEx_uc_web_iframe, "");
                 //去除banner
                 WebElement ele = driver.findElement(By.cssSelector("div.top-banner-wrap"));
 //                String banner = (String) js.executeScript("return arguments[0].innerHTML;", ele);
@@ -238,29 +234,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                out = null;
-            }
-            if (osw != null) {
-                try {
-                    osw.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                osw = null;
-            }
+            closeWrite(osw);
+            closeWrite(out);
             if (fout != null) {
                 try {
                     fout.close();
@@ -268,6 +243,17 @@ public class Main {
                     e.printStackTrace();
                 }
                 fout = null;
+            }
+        }
+    }
+
+    private static void closeWrite(Writer writer) {
+        if (writer != null) {
+            try {
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                writer = null;
             }
         }
     }
