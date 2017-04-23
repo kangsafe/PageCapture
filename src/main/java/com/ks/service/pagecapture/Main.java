@@ -54,16 +54,17 @@ public class Main {
             } else {
                 for (NoteModel m : attachments
                         ) {
-//                    String pageUrl = m.getUrl();
+                    String pageUrl = m.getUrl();
 //                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
 //                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
-                    String pageUrl = "http://s4.uczzd.cn/webapp/webview/article/news.html?app=uc-iflow&aid=12946022970462462619&cid=100&zzd_from=uc-iflow&uc_param_str=dndseiwifrvesvntgipf&rd_type=share&pagetype=share&btifl=100&sdkdeep=3&sdksid=d7a5e485-ca79-54dc-d63c-8d209eb07673&sdkoriginal=d7a5e485-ca79-54dc-d63c-8d209eb07673&from=singlemessage&isappinstalled=1";
+//                    String pageUrl = "http://s4.uczzd.cn/webapp/webview/article/news.html?app=uc-iflow&aid=12946022970462462619&cid=100&zzd_from=uc-iflow&uc_param_str=dndseiwifrvesvntgipf&rd_type=share&pagetype=share&btifl=100&sdkdeep=3&sdksid=d7a5e485-ca79-54dc-d63c-8d209eb07673&sdkoriginal=d7a5e485-ca79-54dc-d63c-8d209eb07673&from=singlemessage&isappinstalled=1";
+//                    String pageUrl = "http://m.sp.uczzd.cn/webview/news?app=uc-iflow&aid=5746954306850374168&cid=100&zzd_from=uc-iflow&uc_param_str=dndsfrvesvntnwpfgicp&recoid=3410570037419189425&rd_type=reco&sp_gz=3";
 
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlFromStr(pageUrl);
                         dao.setUrl(m.getNote_ls_id(), m.getNote_id());
                     }
-                    if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+                    if (pageUrl.contains(".uczzd.cn")) {
                         pageUrl += "&sinvoke=1";
                         driver.manage().window().maximize();
                     } else {
@@ -124,14 +125,14 @@ public class Main {
                             driver = new InternetExplorerDriver();
                         }
                     } finally {
-//                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
+                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
-                    break;
+//                    break;
                 }
                 attachments.clear();
             }
-            break;
+//            break;
         }
     }
 
@@ -141,7 +142,7 @@ public class Main {
         OutputStreamWriter osw = null;
         BufferedWriter out = null;
         try {
-            if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+            if (pageUrl.contains(".uczzd.cn")) {
                 js.executeScript("$(\".show-more-detail\").click();");
             }
             int i = 0;
@@ -209,18 +210,22 @@ public class Main {
             out = new BufferedWriter(osw);
 
             String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
-            if (pageUrl.startsWith("http://s4.uczzd.cn")) {
+            if (pageUrl.contains(".uczzd.cn")) {
                 //去除ucweb中的iframe
                 str = str.replaceAll(Utils.regEx_uc_web_iframe, "");
-                //去除banner
-                WebElement ele = driver.findElement(By.cssSelector("div.top-banner-wrap"));
+                try {
+                    //去除banner
+                    WebElement ele = driver.findElement(By.cssSelector("div.top-banner-wrap"));
 //                String banner = (String) js.executeScript("return arguments[0].innerHTML;", ele);
 //                System.out.println(banner);
 //                System.out.println(ele.getAttribute("innerHTML"));
 //                System.out.println(ele.getAttribute("outerHTML"));
 //                str = str.replaceAll(regEx_uc_web_banner, "");
-                str = str.replace(ele.getAttribute("outerHTML"), "");
-                //去除
+                    str = str.replace(ele.getAttribute("outerHTML"), "");
+                    //去除
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             str = Utils.replaceImageByLocal(images, str);
             out.write(str);

@@ -116,8 +116,8 @@ public class AttachDao {
     }
 
     public List<NoteModel> getNoteList(int num) {
-//        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and url_flag='N' and rownum<? order by note_ctime desc";
-        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and rownum<? order by note_ctime desc";
+        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and url_flag='N' and rownum<? order by note_ctime desc";
+//        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and rownum<? order by note_ctime desc";
         List<NoteModel> attachments = new ArrayList<NoteModel>();
         Connection conn = null;
         PreparedStatement ps = null;
