@@ -134,7 +134,7 @@ public class Main {
                             driver = new InternetExplorerDriver();
                         }
                     } finally {
-                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), content, title, zipPath);
+                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), driver.getPageSource(), title, zipPath);
                     }
                     System.out.println("结束网页剪藏:" + m.getNote_id());
 //                    break;
