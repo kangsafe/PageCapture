@@ -55,14 +55,20 @@ public class Main {
                 for (NoteModel m : attachments
                         ) {
                     String pageUrl = m.getUrl();
+                    //QQ浏览器
+//                    String pageUrl = "https://sc.qq.com/fx/u?r=W1wHysB";
+//                    String pageUrl = "https://sc.qq.com/fx/u?r=1ARqttB";
 //                    String pageUrl = "https://mp.weixin.qq.com/s/SoKwlm5izC2qCAEit9vGHQ";
 //                    String pageUrl = "https://mp.weixin.qq.com/s/Ka8Q7n_wFq0Or437CiInhw";
 //                    String pageUrl = "http://s4.uczzd.cn/webapp/webview/article/news.html?app=uc-iflow&aid=12946022970462462619&cid=100&zzd_from=uc-iflow&uc_param_str=dndseiwifrvesvntgipf&rd_type=share&pagetype=share&btifl=100&sdkdeep=3&sdksid=d7a5e485-ca79-54dc-d63c-8d209eb07673&sdkoriginal=d7a5e485-ca79-54dc-d63c-8d209eb07673&from=singlemessage&isappinstalled=1";
 //                    String pageUrl = "http://m.sp.uczzd.cn/webview/news?app=uc-iflow&aid=5746954306850374168&cid=100&zzd_from=uc-iflow&uc_param_str=dndsfrvesvntnwpfgicp&recoid=3410570037419189425&rd_type=reco&sp_gz=3";
-
+//                    String pageUrl = "【这媳妇绝对是买来的，兄弟这样下去你要绿啊】" +
+//                            "http://m.toutiao.org/group/6407920158597447937/?iid=9776679118&app=news_article&tt_from=android_share&utm_medium=toutiao_android&utm_campaign=client_share" +
+//                            "(想看更多合你口味的内容，马上下载 今日头条)" +
+//                            "http://app.toutiao.com/news_article/?utm_source=link";
                     if (!Utils.isUrl(pageUrl)) {
-                        pageUrl = Utils.getUrlFromStr(pageUrl);
-                        dao.setUrl(m.getNote_ls_id(), m.getNote_id());
+                        pageUrl = Utils.getUrlHttpFromStr(pageUrl);
+//                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), pageUrl);
                     }
                     if (pageUrl.contains(".uczzd.cn")) {
                         pageUrl += "&sinvoke=1";
@@ -92,6 +98,9 @@ public class Main {
                         title = driver.getTitle();
                         System.out.println("网页标题:" + title);
                         System.out.println("地址:" + driver.getCurrentUrl());
+                        if (!pageUrl.equals(driver.getCurrentUrl())) {
+                            dao.setUrl(m.getNote_ls_id(), m.getNote_id(), driver.getCurrentUrl());
+                        }
                         String str = driver.getPageSource();
                         content = str.replaceAll(Utils.regEx_html, "");
                         List<WebElement> meta = driver.findElements(By.tagName("meta"));
@@ -211,9 +220,9 @@ public class Main {
 
             String str = driver.getPageSource().replaceAll(Utils.regEx_script, "");
             if (pageUrl.contains(".uczzd.cn")) {
-                //去除ucweb中的iframe
-                str = str.replaceAll(Utils.regEx_uc_web_iframe, "");
                 try {
+                    //去除ucweb中的iframe
+                    str = str.replaceAll(Utils.regEx_uc_web_iframe, "");
                     //去除banner
                     WebElement ele = driver.findElement(By.cssSelector("div.top-banner-wrap"));
 //                String banner = (String) js.executeScript("return arguments[0].innerHTML;", ele);

@@ -21,6 +21,7 @@ public class Utils {
     public static String regEx_html = "<[^>]+>"; //定义HTML标签的正则表达式
 
     public static String regEx_url = "[a-zA-z]+://[^\\s]*";
+    public static String regEx_url_http = "http(s?)://(\\w+\\.){1,}\\w+[^\\s()\\[\\]\\uFE30-\\uFFA0]*";
 
     public static String regEx_img = "<img\\b[^>]*>";
 
@@ -42,6 +43,15 @@ public class Utils {
      */
     public static String getUrlFromStr(String str) {
         return str.replaceAll(regEx_url, "").trim();
+    }
+
+    public static String getUrlHttpFromStr(String str) {
+        Pattern pattern = Pattern.compile(regEx_url_http);
+        Matcher matcher = pattern.matcher(str);
+        while (matcher.find()) {
+            return matcher.group();
+        }
+        return str;
     }
 
     /**
@@ -388,7 +398,7 @@ public class Utils {
             }
         }
         //去除空行
-        temp = temp.replaceAll("\\b*\\n+", "");
+        temp = temp.replaceAll("\\b*\\n\\n+", "");
         //去除base信息
         temp = temp.replaceAll(regEx_head_base, "");
         return temp;

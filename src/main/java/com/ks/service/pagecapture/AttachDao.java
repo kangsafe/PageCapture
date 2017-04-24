@@ -91,7 +91,7 @@ public class AttachDao {
         }
     }
 
-    public void setUrl(String note_ls_id, String note_id) {
+    public void setUrl(String note_ls_id, String note_id, String url) {
         String sql = "update tb_note_info set url=? where note_id=?";
         String sql2 = "UPDATE  tb_note_info_ls set url=? where note_ls_id=?";
         Connection conn = null;
@@ -100,11 +100,13 @@ public class AttachDao {
         try {
             conn = BaseDaoJdbc.getConn();
             ps = conn.prepareStatement(sql);
-            ps.setString(1, note_id);
+            ps.setString(1, url);
+            ps.setString(2, note_id);
             rs = ps.executeUpdate();
             ps.close();
             ps = conn.prepareStatement(sql2);
-            ps.setString(1, note_ls_id);
+            ps.setString(1, url);
+            ps.setString(2, note_ls_id);
             rs = ps.executeUpdate();
             ps.close();
             conn.close();
@@ -117,7 +119,7 @@ public class AttachDao {
 
     public List<NoteModel> getNoteList(int num) {
         String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and url_flag='N' and rownum<? order by note_ctime desc";
-//        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where url is not null and rownum<? order by note_ctime desc";
+//        String sql = "select note_ls_id,note_id,user_id,group_id,url,url_flag from tb_note_info_ls where user_id='9a825664ff0a4b7a8d46c94949ebf7e9' and url is not null and rownum<? order by note_ctime desc";
         List<NoteModel> attachments = new ArrayList<NoteModel>();
         Connection conn = null;
         PreparedStatement ps = null;
