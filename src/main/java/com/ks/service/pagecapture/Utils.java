@@ -28,6 +28,12 @@ public class Utils {
 
     public static String regEx_img_src = " src=[\\'\\\"]?([^\\'\\\"]*)[\\'\\\"]? ";
 
+    public static String regEx_head_base = "<base\\b[^>]*>";
+
+    public static String regEx_uc_web_iframe = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
+
+    public static String regEx_uc_web_banner = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
+
     /**
      * 获取地址部分
      *
@@ -366,7 +372,7 @@ public class Utils {
         Matcher matcher = pattern.matcher(str);
         List<String> imgs = new ArrayList<>();
         while (matcher.find()) {
-//            System.out.println(matcher.group());
+            System.out.println(matcher.group());
             imgs.add(matcher.group());
         }
         for (int i = 0; i < images.size(); i++) {
@@ -374,11 +380,17 @@ public class Utils {
             if (index > -1) {
                 String t = imgs.get(index);
                 String newt = t.replace("data-imgid=\"" + images.get(i).getImgid() + "\" ", "").replaceAll(regEx_img_src, " src=\"" + images.get(i).getSrc() + "\" ");
-//                System.out.println(newt);
+                if (!newt.contains(" src=\"")) {
+                    newt = newt.replace(" />", " src=\"" + images.get(i).getSrc() + "\" />");
+                }
+                System.out.println(newt);
                 temp = temp.replace(t, newt);
             }
         }
-        temp = temp.replaceAll("\\n\\n+", "");
+        //去除空行
+        temp = temp.replaceAll("\\b*\\n+", "");
+        //去除base信息
+        temp = temp.replaceAll(regEx_head_base, "");
         return temp;
     }
 
