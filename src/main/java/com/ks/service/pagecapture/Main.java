@@ -4,13 +4,13 @@ import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.io.*;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Administrator on 2017/3/30.
@@ -28,10 +28,16 @@ public class Main {
         }
         //初始化webdriver配置
         System.getProperties().setProperty(Config.webdriver, Config.webdriver_path);
+        Map<String, String> mobileEmulation = new HashMap<String, String>();
+        mobileEmulation.put("deviceName", "Google Nexus 7");
+        Map<String, Object> chromeOptions = new HashMap<String, Object>();
+        chromeOptions.put("mobileEmulation", mobileEmulation);
+        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
+        capabilities.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
         System.out.println("网页剪藏程序开始运行...");
 
         if (Config.webdriver.indexOf("chrome") > 0) {
-            driver = new ChromeDriver();//new FirefoxDriver();
+            driver = new ChromeDriver(capabilities);//new ChromeDriver();//new FirefoxDriver();
         } else if (Config.webdriver.indexOf("ie") > 0) {
             driver = new InternetExplorerDriver();
         }
@@ -66,16 +72,17 @@ public class Main {
 //                            "http://m.toutiao.org/group/6407920158597447937/?iid=9776679118&app=news_article&tt_from=android_share&utm_medium=toutiao_android&utm_campaign=client_share" +
 //                            "(想看更多合你口味的内容，马上下载 今日头条)" +
 //                            "http://app.toutiao.com/news_article/?utm_source=link";
+//                    String pageUrl = "http://m.toutiao.org/group/6412414548577648898/?iid=9776679118&app=news_article&tt_from=android_share&utm_medium=toutiao_android&utm_campaign=client_share";
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlHttpFromStr(pageUrl);
 //                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), pageUrl);
                     }
-                    if (pageUrl.contains(".uczzd.cn")) {
-                        pageUrl += "&sinvoke=1";
-                        driver.manage().window().maximize();
-                    } else {
-                        driver.manage().window().setSize(new Dimension(414, 736));
-                    }
+//                    if (pageUrl.contains(".uczzd.cn")) {
+//                        pageUrl += "&sinvoke=1";
+//                        driver.manage().window().maximize();
+//                    } else {
+//                        driver.manage().window().setSize(new Dimension(414, 736));
+//                    }
                     String path = Config.root_page_path;
                     String path2 = Config.root_page_path_other;
                     String zipPath = "esoupload/notefiles/";
@@ -93,6 +100,8 @@ public class Main {
                     System.out.println("网页剪藏开始");
                     System.out.println("笔记id:" + m.getNote_id());
                     try {
+//                        WebDriver.Navigation navigation = driver.navigate();
+//                        navigation.to(pageUrl);
                         driver.get(pageUrl);
 //                        js.executeScript("document.body.scrollTop = document.body.scrollHeight;");
                         title = driver.getTitle();
