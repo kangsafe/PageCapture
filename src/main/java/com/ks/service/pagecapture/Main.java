@@ -73,6 +73,7 @@ public class Main {
 //                            "(想看更多合你口味的内容，马上下载 今日头条)" +
 //                            "http://app.toutiao.com/news_article/?utm_source=link";
 //                    String pageUrl = "http://m.toutiao.org/group/6412414548577648898/?iid=9776679118&app=news_article&tt_from=android_share&utm_medium=toutiao_android&utm_campaign=client_share";
+//                    String pageUrl = "https://m.toutiao.com/i6407322250415964673/?tt_from=android_share&iid=9776679118&app=news_article&utm_medium=toutiao_android&utm_campaign=client_share";
                     if (!Utils.isUrl(pageUrl)) {
                         pageUrl = Utils.getUrlHttpFromStr(pageUrl);
 //                        dao.setUrl(m.getNote_ls_id(), m.getNote_id(), pageUrl);
@@ -241,6 +242,13 @@ public class Main {
 //                str = str.replaceAll(regEx_uc_web_banner, "");
                     str = str.replace(ele.getAttribute("outerHTML"), "");
                     //去除
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else if (pageUrl.contains("toutiao.com") || pageUrl.contains("toutiao.org")) {
+                try {
+                    //去除头条中的iframe
+                    str = str.replaceAll(Utils.regEx_iframe, "");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

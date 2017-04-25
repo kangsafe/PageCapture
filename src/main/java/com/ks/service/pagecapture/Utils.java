@@ -34,6 +34,9 @@ public class Utils {
     public static String regEx_uc_web_iframe = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
 
     public static String regEx_uc_web_banner = "<iframe\\s*src=['\"]ucweb\\b[^>]*>(\\s*)</iframe>";
+    public static String regEx_toutiao_iframe = "<iframe[^>]*data-from=['toutiao'|\"toutiao\"][^>]*>(\\s*)</iframe>";
+    public static String regEx_toutiao_iframe_2 = "<iframe[\\s+\\S+=['\\S*'|\"\\S*\"]*]*data-from=['toutiao'|\"toutiao\"][^>]*>(\\s*)</iframe>";
+    public static String regEx_iframe = "<iframe\\b[^>]*>(\\s*)</iframe>";
 
     /**
      * 获取地址部分
